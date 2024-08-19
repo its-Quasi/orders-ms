@@ -1,6 +1,7 @@
-import { Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { HttpStatus, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { PrismaClient } from "@prisma/client";
+import { RpcException } from "@nestjs/microservices";
 
 @Injectable()
 export class OrdersService extends PrismaClient implements OnModuleInit {
@@ -13,7 +14,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
   }
 
   create(createOrderDto: CreateOrderDto) {
-    return createOrderDto;
+    return this.order.create({ data: createOrderDto })
   }
 
   findAll() {
