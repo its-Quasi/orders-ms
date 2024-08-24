@@ -1,8 +1,9 @@
 import { Controller, ParseUUIDPipe } from "@nestjs/common";
-import { MessagePattern, Payload } from "@nestjs/microservices";
+import { MessagePattern, Payload, RpcException } from "@nestjs/microservices";
 import { OrdersService } from "./orders.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
-import { PaginationDto } from "src/common/dto/pagination.dto";
+import { PaginationOrderDto } from "./dto/pagination-order.dto";
+import { UpdateOrderDto } from "./dto/update-order.dto";
 
 @Controller()
 export class OrdersController {
@@ -14,7 +15,7 @@ export class OrdersController {
   }
 
   @MessagePattern("find_all_orders")
-  findAll(@Payload() pagination: PaginationDto) {
+  findAll(@Payload() pagination: PaginationOrderDto) {
     return this.ordersService.findAll(pagination)
   }
 
@@ -24,7 +25,12 @@ export class OrdersController {
   }
 
   @MessagePattern("update_order")
-  changeOrderStatus(@Payload("id") id: string) {
-    return this.ordersService.changeStatus(id);
+  changeOrderStatus(@Payload() order: UpdateOrderDto) {
+    try {
+      return this.ordersService.changeStatus(order);
+    } catch (e) {
+      console.error("Error en changeOrderStatus:", e);
+      throw new RpcException('Error processing the order update');
+    }
   }
 }
