@@ -1,12 +1,12 @@
-import { HttpStatus, Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { PrismaClient } from "@prisma/client";
 import { ClientProxy, RpcException } from "@nestjs/microservices";
-import { PaginationDto } from "src/common/dto/pagination.dto";
 import { PaginationOrderDto } from "./dto/pagination-order.dto";
-import { UpdateOrderDto } from "./dto/update-order.dto";
 import { PRODUCT_SERVICE } from "src/config/services";
-import { firstValueFrom, throwError } from "rxjs";
+import { firstValueFrom } from "rxjs";
+import { UpdateOrderDto } from "./dto/update-order.dto";
+import { ChangeOrderStatusDto } from "./dto/change-order-status.dto";
 
 interface Product {
   price: number
@@ -100,23 +100,41 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
     }
   }
 
-  findOne(id: string) {
-    return this.order.findUnique({
-      where: { id }
+  async findOne(id: string) {
+    const order = await this.order.findUnique({
+      where: { id },
+      include: {
+        orderItems: {
+          select: { quantity: true, price: true, productId: true }
+        }
+      }
     })
+
+    const productsIds = order.orderItems.map(p => p.productId)
+
+    const products: Product[] = await firstValueFrom<Product[]>(
+      this.productsClient.send('validate_products', productsIds)
+    )
+
+    const orderItems = order.orderItems.map(item => {
+      const { productId, ...rest } = item
+      return {
+        ...rest,
+        name: products.find(product => product.id === item.productId).name
+      }
+    })
+    const { id: _, ...rest } = order
+    return {
+      ...rest,
+      orderItems
+    }
   }
 
-  async changeStatus(data: UpdateOrderDto) {
-
-    const { id } = data
-    let oldOrder = await this.findOne(id)
-
+  async changeStatus(data: ChangeOrderStatusDto) {
+    const { id, status } = data
     return this.order.update({
-      data: {
-        ...oldOrder,
-        ...data
-      },
-      where: { id }
+      where: { id },
+      data: { status }
     });
   }
 }

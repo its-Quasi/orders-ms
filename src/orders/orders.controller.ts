@@ -3,7 +3,7 @@ import { MessagePattern, Payload, RpcException } from "@nestjs/microservices";
 import { OrdersService } from "./orders.service";
 import { CreateOrderDto } from "./dto/create-order.dto";
 import { PaginationOrderDto } from "./dto/pagination-order.dto";
-import { UpdateOrderDto } from "./dto/update-order.dto";
+import { ChangeOrderStatusDto } from "./dto/change-order-status.dto";
 
 @Controller()
 export class OrdersController {
@@ -25,7 +25,7 @@ export class OrdersController {
   }
 
   @MessagePattern("update_order")
-  changeOrderStatus(@Payload() order: UpdateOrderDto) {
+  changeOrderStatus(@Payload() order: ChangeOrderStatusDto) {
     try {
       return this.ordersService.changeStatus(order);
     } catch (e) {
