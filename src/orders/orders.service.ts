@@ -3,7 +3,7 @@ import { CreateOrderDto } from "./dto/create-order.dto";
 import { PrismaClient } from "@prisma/client";
 import { ClientProxy, RpcException } from "@nestjs/microservices";
 import { PaginationOrderDto } from "./dto/pagination-order.dto";
-import { PRODUCT_SERVICE } from "src/config/services";
+import { NATS_SERVICE, PRODUCT_SERVICE } from "src/config/services";
 import { firstValueFrom } from "rxjs";
 import { UpdateOrderDto } from "./dto/update-order.dto";
 import { ChangeOrderStatusDto } from "./dto/change-order-status.dto";
@@ -24,14 +24,14 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
     this.logger.log("ORDER DATABASE CONNECTED")
   }
 
-  constructor(@Inject(PRODUCT_SERVICE) private readonly productsClient: ClientProxy) { super() }
+  constructor(@Inject(NATS_SERVICE) private readonly client: ClientProxy) { super() }
 
   async create(createOrderDto: CreateOrderDto) {
 
     try {
       const ids = createOrderDto.items.map(item => item.productId)
       const products: Product[] = await firstValueFrom<Product[]>(
-        this.productsClient.send('validate_products', ids)
+        this.client.send('validate_products', ids)
       )
 
       const totalAmount = createOrderDto.items.reduce((acc, item) => {
@@ -113,7 +113,7 @@ export class OrdersService extends PrismaClient implements OnModuleInit {
     const productsIds = order.orderItems.map(p => p.productId)
 
     const products: Product[] = await firstValueFrom<Product[]>(
-      this.productsClient.send('validate_products', productsIds)
+      this.client.send('validate_products', productsIds)
     )
 
     const orderItems = order.orderItems.map(item => {

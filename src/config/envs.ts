@@ -3,8 +3,7 @@ import { z } from "zod";
 
 interface EnvVars {
   PORT?: number;
-  PRODUCT_MICROSERVICE_HOST?: string;
-  PRODUCT_MICROSERVICE_PORT?: string;
+  NATS_SERVERS?: string[]
 }
 
 const envSchema = z.object({
@@ -12,8 +11,7 @@ const envSchema = z.object({
     (p: string) => Number(p),
     z.number({ required_error: "Environment Variable PORT is required" })
   ),
-  PRODUCT_MICROSERVICE_HOST: z.string(),
-  PRODUCT_MICROSERVICE_PORT: z.string(),
+  NATS_SERVERS: z.preprocess((p: string) => p.split(','), z.array(z.string()))
 });
 
 const { success, data, error } = envSchema.safeParse(process.env);
@@ -30,6 +28,5 @@ const envVars: EnvVars = data;
 
 export const envs = {
   port: envVars.PORT,
-  productMsHost: envVars.PRODUCT_MICROSERVICE_HOST,
-  productMsPort: envVars.PRODUCT_MICROSERVICE_PORT,
+  nats_servers: envVars.NATS_SERVERS
 };
